@@ -1,0 +1,16 @@
+[package]
+name = "trai_bot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dotenv = "0.15.0"
+env = "0.0.0"
+env_logger = "0.9.1"
+lazy_static = { version = "1.4.0", features = ["spin"] }
+log = "0.4.17"
+rusqlite = "0.28.0"
+serenity = "0.11.5"
+tokio = { version = "1.21.2", features = ["rt-multi-thread"] }

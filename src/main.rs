@@ -48,6 +48,7 @@ impl EventHandler for Handler {
             let content = match command.data.name.as_str() {
                 "count_emote" => commands::count_emote::run(&command.data.options).await,
                 "count_all_emotes" => commands::count_all_emotes::run(&command.data.options).await,
+                "count_from_to" => commands::count_from_to::run(&command.data.options).await,
                 _ => "This command does not exists".to_string(),
             };
 
@@ -70,10 +71,12 @@ impl EventHandler for Handler {
 
             for emote in emotes {
                 if msg.content.contains(&emote.id.0.to_string()) {
-                    let emote_string = &format!("<:{}:{}>", emote.name, emote.id.0);
+                    let emote_string = &get_emote(emote.id.0.to_string(), emote.name.clone());
                     let count = msg.content.split(emote_string).into_iter().count() - 1;
 
-                    add_emote_count(emote.id.0.to_string(), emote.name, count as i32).await;
+                    for _ in 0..count {
+                        add_emote_to_database(emote.id.0.to_string(), emote.name.clone()).await;
+                    }
                 }
             }
         }
@@ -84,7 +87,7 @@ impl EventHandler for Handler {
         let data: Vec<&str> = value.split(":").collect();
 
         if data.len() == 2 {
-            add_emote_count(data[1].to_string(), data[0].to_string(), 1).await;
+            add_emote_to_database(data[1].to_string(), data[0].to_string()).await;
         } else {
             info!("{:?}", data);
         }
@@ -97,7 +100,7 @@ impl EventHandler for Handler {
     ) {
         let value = removed_reaction.emoji.as_data();
         let data: Vec<&str> = value.split(":").collect();
-        add_emote_count(data[1].to_string(), data[0].to_string(), -1).await;
+        remove_emote_from_database(data[1].to_string(), data[0].to_string()).await;
     }
 
     async fn reaction_remove_all(
@@ -120,6 +123,11 @@ impl EventHandler for Handler {
             commands::count_all_emotes::register(command)
         })
         .await;
+
+        let _ = Command::create_global_application_command(&ctx.http, |command| {
+            commands::count_from_to::register(command)
+        })
+        .await;
     }
 }
 
@@ -134,7 +142,7 @@ async fn main() {
     dotenv().ok();
 
     let _ = DATABASE.lock().await.execute(
-        &format!("CREATE TABLE IF NOT EXISTS emotes (id INTEGER PRIMARY KEY AUTOINCREMENT, emote_id INTEGER, count INTEGER, guild_id INTEGER)"),
+        &format!("CREATE TABLE IF NOT EXISTS emotes (id INTEGER PRIMARY KEY AUTOINCREMENT, emote_id INTEGER, guild_id INTEGER, date INTEGER)"),
         [],
     ).unwrap();
 
@@ -174,51 +182,44 @@ async fn main() {
     }
 }
 
-async fn add_emote_count(emote_id: String, name: String, count: i32) {
-    let sql = &format!(
-        "SELECT count from emotes where emote_id LIKE '%{}%'",
-        emote_id
-    );
+fn get_emote(emote_id: String, name: String) -> String {
+    format!("<:{}:{}>", name, emote_id)
+}
 
-    let mut table_count: i32 = match DATABASE.lock().await.query_row(sql, [], |row| row.get(0)) {
-        Ok(value) => value,
-        Err(err) => {
-            println!("Error: {}", err);
-            -1
-        }
-    };
+async fn add_emote_to_database(emote_id: String, name: String) {
+    let connection = DATABASE.lock().await;
+    let mut sql = connection
+        .prepare("INSERT INTO emotes (emote_id, guild_id, date) VALUES (?, ?, ?);")
+        .unwrap();
 
-    if table_count == -1 {
-        let _ = DATABASE
-            .lock()
-            .await
-            .execute(
-                &format!(
-                    "INSERT INTO emotes (emote_id, count, guild_id) VALUES ('{}', {}, {})",
-                    format!("<:{}:{}>", name, emote_id),
-                    if count > 0 { count } else { 0 },
-                    "597433199567568896"
-                ),
-                [],
-            )
-            .unwrap();
+    sql.execute([
+        get_emote(emote_id, name),
+        String::new(),
+        chrono::offset::Utc::now().timestamp().to_string(),
+    ])
+    .unwrap();
+}
 
-        println!("{}", if count > 0 { count } else { 0 });
-    } else {
-        table_count += count as i32;
+async fn remove_emote_from_database(emote_id: String, name: String) {
+    let connection = DATABASE.lock().await;
+    let mut sql = connection
+        .prepare(&format!(
+            "SELECT id FROM emotes WHERE emote_id LIKE '%{}%'",
+            get_emote(emote_id, name)
+        ))
+        .unwrap();
 
-        if table_count > 0 {
-            DATABASE
-                .lock()
-                .await
-                .execute(
-                    &format!(
-                        "UPDATE emotes set count = {} where emote_id LIKE '%{}%'",
-                        table_count, emote_id
-                    ),
-                    [],
-                )
-                .unwrap();
-        }
-    }
+    let ids: Vec<Result<i32, rusqlite::Error>> = sql
+        .query_map([], |row| Ok(row.get(0).unwrap()))
+        .unwrap()
+        .collect();
+
+    // Delete latest or first emote?
+    let emote_to_delete = ids[ids.len() - 1].as_ref().unwrap();
+
+    sql = connection
+        .prepare("DELETE FROM emotes WHERE id = ?")
+        .unwrap();
+
+    sql.execute([emote_to_delete]).unwrap();
 }

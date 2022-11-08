@@ -15,17 +15,20 @@ pub async fn run(options: &[CommandDataOption]) -> String {
         .expect("Expected String object");
 
     if let CommandDataOptionValue::String(value) = option {
+        let current_date = chrono::offset::Utc::now().timestamp();
         let connection = DATABASE.lock().await;
         let mut sql = connection
             .prepare(&format!(
-                "SELECT date FROM emotes WHERE emote_id LIKE '%{}%'",
+                "SELECT date FROM emotes WHERE emote_id LIKE '%{}%' AND date < ?",
                 value
             ))
             .unwrap();
         let emotes: Vec<Result<i32, rusqlite::Error>> = sql
-            .query_map([], |row| Ok(row.get(0).unwrap()))
+            .query_map([current_date], |row| Ok(row.get(0).unwrap()))
             .unwrap()
             .collect();
+
+        println!("{}", value);
 
         format!("Count of {} is: {}", value, emotes.len())
     } else {
@@ -35,12 +38,12 @@ pub async fn run(options: &[CommandDataOption]) -> String {
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
-        .name("count_emote")
-        .description("Get the count of an specified emote")
+        .name("hello_world")
+        .description("Get the count of all emotes from-to a certain date")
         .create_option(|option| {
             option
-                .name("emote")
-                .description("The emote you want the count of")
+                .name("Start date")
+                .description("The start date in format dd.mm.yyyy")
                 .kind(CommandOptionType::String)
                 .required(true)
         })

@@ -4,7 +4,9 @@ use serenity::model::prelude::interaction::application_command::{
     CommandDataOption, CommandDataOptionValue,
 };
 
-use crate::DATABASE;
+use crate::database::DATABASE;
+
+pub const COMMAND_STRING: &str = "count_emote_from";
 
 pub async fn run(options: &[CommandDataOption]) -> String {
     let option = options
@@ -38,7 +40,7 @@ pub async fn run(options: &[CommandDataOption]) -> String {
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
-        .name("hello_world")
+        .name(COMMAND_STRING)
         .description("Get the count of all emotes from-to a certain date")
         .create_option(|option| {
             option

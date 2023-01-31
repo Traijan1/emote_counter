@@ -133,11 +133,11 @@ impl EventHandler for Handler {
         .await
         .unwrap();
 
-        Command::create_global_application_command(&ctx.http, |command| {
-            commands::count_from_to::register(command)
-        })
-        .await
-        .unwrap();
+        // Command::create_global_application_command(&ctx.http, |command| {
+        //     commands::count_from_to::register(command)
+        // })
+        // .await
+        // .unwrap();
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -152,9 +152,9 @@ impl EventHandler for Handler {
                     used_all_emote_command = true;
                     commands::count_all_emotes::run(&command.data.options).await
                 }
-                count_from_to::COMMAND_STRING => {
-                    commands::count_from_to::run(&command.data.options).await
-                }
+                // count_from_to::COMMAND_STRING => {
+                //     commands::count_from_to::run(&command.data.options).await
+                // }
                 _ => "This command does not exists".to_string(),
             };
 

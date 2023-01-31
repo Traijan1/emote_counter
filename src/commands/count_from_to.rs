@@ -6,7 +6,7 @@ use serenity::model::prelude::interaction::application_command::{
 
 use crate::database::DATABASE;
 
-pub const COMMAND_STRING: &str = "count_emote_from";
+pub const COMMAND_STRING: &str = "count_emote";
 
 pub async fn run(options: &[CommandDataOption]) -> String {
     let option = options

@@ -43,14 +43,13 @@ pub async fn remove_emote_from_database(emote_id: u64, name: &str) {
 
     let connection = DATABASE.lock().await;
     let mut sql = connection
-        .prepare(&format!(
-            "SELECT id FROM emotes WHERE emote_id LIKE '%{}%'",
-            get_emote(emote_id, name.into())
-        ))
+        .prepare("SELECT id FROM emotes WHERE emote_id LIKE ?")
         .unwrap();
 
     let ids: Vec<Result<i32, rusqlite::Error>> = sql
-        .query_map([], |row| Ok(row.get(0).unwrap()))
+        .query_map([format!("%{}%", get_emote(emote_id, name.into()))], |row| {
+            Ok(row.get(0).unwrap())
+        })
         .unwrap()
         .collect();
 

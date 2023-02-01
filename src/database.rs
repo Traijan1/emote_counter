@@ -9,7 +9,7 @@ lazy_static! {
 }
 
 load_dotenv::load_dotenv!();
-const SERVER_EMOTE_REGEX: &str = std::env!("SERVER_EMOTE_REGEX");
+const SERVER_EMOTE_REGEX: Option<&str> = std::option_env!("SERVER_EMOTE_REGEX");
 
 pub async fn create_table() {
     let _ = DATABASE.lock().await.execute(
@@ -68,6 +68,11 @@ pub fn get_emote(emote_id: u64, name: String) -> String {
 }
 
 fn is_trackable_emote(emote: &str) -> bool {
-    let pattern = Regex::new(&format!("^{SERVER_EMOTE_REGEX}.*$")).unwrap();
-    pattern.is_match(emote)
+    match SERVER_EMOTE_REGEX {
+        Some(value) => {
+            let pattern = Regex::new(value).unwrap();
+            pattern.is_match(emote)
+        }
+        None => false,
+    }
 }

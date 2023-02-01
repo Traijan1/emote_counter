@@ -10,7 +10,7 @@ use serenity::model::prelude::interaction::{Interaction, InteractionResponseType
 use serenity::model::prelude::{MessageId, ReactionType};
 use serenity::prelude::*;
 
-use crate::commands::{self, count_all_emotes, count_emote, count_from_to};
+use crate::commands::{self, count_all_emotes, count_emote};
 use crate::database::{add_emote_to_database, get_emote, remove_emote_from_database};
 
 const LEFT_ARROW: &str = "⬅️";
@@ -32,8 +32,8 @@ impl EventHandler for Handler {
 
             for emote in emotes {
                 if msg.content.contains(&emote.id.0.to_string()) {
-                    let emote_string = &get_emote(emote.id.0, emote.name.clone());
-                    let count = msg.content.split(emote_string).into_iter().count() - 1;
+                    let emote_string = get_emote(emote.id.0, emote.name.clone());
+                    let count = msg.content.split(&emote_string).into_iter().count() - 1;
 
                     for _ in 0..count {
                         add_emote_to_database(emote.id.0, &emote.name).await;
@@ -50,14 +50,12 @@ impl EventHandler for Handler {
             }
 
             // Get page state for message id
-
             let mut data = ctx.data.write().await;
             let map = data.get_mut::<Paging>().unwrap();
 
             let page = map.get_mut(&add_reaction.message_id).unwrap();
 
             // Set new state (value -1 or +1)
-
             if add_reaction.emoji.unicode_eq(LEFT_ARROW) {
                 if *page == 0 {
                     add_reaction.delete(&ctx.http).await.unwrap();
@@ -69,7 +67,7 @@ impl EventHandler for Handler {
                 *page += 1;
             }
 
-            let mesage_value = &get_emotes_from_database(*page).await;
+            let mesage_value = get_emotes_from_database(*page).await;
 
             if mesage_value.is_empty() {
                 add_reaction.delete(&ctx.http).await.unwrap();
@@ -132,12 +130,6 @@ impl EventHandler for Handler {
         })
         .await
         .unwrap();
-
-        // Command::create_global_application_command(&ctx.http, |command| {
-        //     commands::count_from_to::register(command)
-        // })
-        // .await
-        // .unwrap();
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -152,9 +144,6 @@ impl EventHandler for Handler {
                     used_all_emote_command = true;
                     commands::count_all_emotes::run(&command.data.options).await
                 }
-                // count_from_to::COMMAND_STRING => {
-                //     commands::count_from_to::run(&command.data.options).await
-                // }
                 _ => "This command does not exists".to_string(),
             };
 

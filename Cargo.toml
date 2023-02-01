@@ -1,5 +1,5 @@
 [package]
-name = "trai_bot"
+name = "emote_counter_bot"
 version = "0.1.0"
 edition = "2021"
 

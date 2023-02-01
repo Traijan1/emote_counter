@@ -278,6 +278,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
+name = "emote_counter_bot"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dotenv",
+ "env",
+ "env_logger",
+ "lazy_static",
+ "load-dotenv",
+ "log",
+ "regex",
+ "rusqlite",
+ "serenity",
+ "tokio",
+]
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1348,23 +1365,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24eb03ba0eab1fd845050058ce5e616558e8f8d8fca633e6b163fe25c797213a"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "trai_bot"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dotenv",
- "env",
- "env_logger",
- "lazy_static",
- "load-dotenv",
- "log",
- "regex",
- "rusqlite",
- "serenity",
- "tokio",
 ]
 
 [[package]]
